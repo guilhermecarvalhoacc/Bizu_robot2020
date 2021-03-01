@@ -62,3 +62,20 @@ def check_levels(imagem_gray):
                 if j < menor_j:
                     menor_j = j
     return menor_i, maior_i, menor_j, maior_j 
+
+
+def count_pixels(mask, ponto1, ponto2, txt_color):
+    """ Recebe uma mascara binaria e 2 pontos e conta quantos pixels são brancos na mascara"""
+    x1, y1 = ponto1
+    x2, y2 = ponto2
+
+    font = cv2.FONT_HERSHEY_SIMPLEX 
+    # Selecionando só a região da imagem com o cachorro
+    submask = mask[y1:y2,x1:x2]
+    # Somando os pixels 255 e dividindo por 255 para saber quantos são
+    pixels = np.sum(submask)/255
+    # O resto é só plot
+    rgb_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+    cv2.rectangle(rgb_mask, ponto1, ponto2, (255,0,0), 3)
+    cv2.putText(rgb_mask, "%s:%d"%(txt_color, pixels), (int((x1+x2)/2), int((y1+y2)/2)), font, 1, (0,255,0),1,cv2.LINE_AA)
+    return pixels, rgb_mask
