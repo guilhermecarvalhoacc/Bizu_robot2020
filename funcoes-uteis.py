@@ -1,14 +1,3 @@
-# DESENHA CENTRO:
-def crosshair(img, point, size, color):
-    """ Desenha um crosshair centrado no point.
-        point deve ser uma tupla (x,y)
-        color é uma tupla R,G,B uint8
-    """
-    x,y = point
-    cv2.line(img,(x - size,y),(x + size,y),color,2)
-    cv2.line(img,(x,y - size),(x, y + size),color,2)
-
-
 # ENCONTRA CENTRO DE UM CORTORNO:
 
 # exemplo contorno: 
@@ -26,16 +15,13 @@ def center_of_contour(contorno):
 
 
 # ENCONTRA CENTRO DO CONTORNO DE MAIOR AREA:
-def acha_maior_contorno_centro(gray):
+def acha_centro_maior_contorno(gray):
     """ Estamos trabalhando com BGR como cores
         Retorna uma imagem com os contornos desenhados e a coordenada do centro do maior contorno
     """
     contornos, arvore = cv2.findContours(gray.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     bgr = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-    cv2.drawContours(bgr, contornos, -1, [255, 0, 0], 1);
-    
-    
-    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.drawContours(bgr, contornos, -1, [255, 0, 0], 1)
     
     p = (0,0)
     
@@ -49,7 +35,30 @@ def acha_maior_contorno_centro(gray):
 
     if maior is not None:
         p = center_of_contour(maior)      
-        cv2.drawContours(bgr, [maior], -1, [0, 0, 255], 2);
+        cv2.drawContours(bgr, [maior], -1, [0, 0, 255], 2)
         crosshair(bgr, p, 5, (0,255,0))
     
-    return bgr, p
+    return p
+
+
+# Função que percorre a imagem e identifica as extremidades do contorno
+# i = linha
+# j = coluna 
+
+def check_levels(imagem_gray):
+    maior_i = -1
+    menor_i = imagem_gray.shape[0] + 1
+    menor_j = imagem_gray.shape[1] + 1
+    maior_j = -1
+    for i in range(imagem_gray.shape[0]):
+        for j in range(imagem_gray.shape[1]):
+            if imagem_gray[i][j] == 255:
+                if i < menor_i:
+                    menor_i = i
+                if i  > maior_i:
+                    maior_i = i
+                if j  > maior_j:
+                    maior_j = j 
+                if j < menor_j:
+                    menor_j = j
+    return menor_i, maior_i, menor_j, maior_j 
