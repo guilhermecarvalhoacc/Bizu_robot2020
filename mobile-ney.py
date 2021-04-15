@@ -156,6 +156,7 @@ def q1_solution(resultados, frame):
             chair = r
         if r[0] in dog_categories:
             dogs.append(r)
+            
     print("dogs", dogs)
     ### Vamos classificar os cães em amarelo ou rosa, se houver
     if len(dogs)>=1:

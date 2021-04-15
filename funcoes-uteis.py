@@ -1,7 +1,21 @@
 # ENCONTRA CENTRO DE UM CORTORNO:
+import cv2
+import numpy as np
+from math import *
 
-# exemplo contorno: 
-# contornos, arvore = cv2.findContours(segmentado.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+# Segmenta cor
+def segmenta_cor(frame, menor, maior):
+    frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    mask = cv2.inRange(frame_hsv,menor, maior)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(6,6))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    return mask
+
+# Encontra o centro de um contorno 
 def center_of_contour(contorno):
     """ Retorna uma tupla (cx, cy) que desenha o centro do contorno"""
     M = cv2.moments(contorno)
@@ -14,14 +28,14 @@ def center_of_contour(contorno):
         return (-1, -1)
 
 
-# ENCONTRA CENTRO DO CONTORNO DE MAIOR AREA:
-def acha_centro_maior_contorno(gray):
+# ENCONTRA CENTRO E ÁREA DO CONTORNO DE MAIOR AREA:
+def acha_maior_contorno(gray):
     """ Estamos trabalhando com BGR como cores
         Retorna uma imagem com os contornos desenhados e a coordenada do centro do maior contorno
     """
     contornos, arvore = cv2.findContours(gray.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    bgr = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-    cv2.drawContours(bgr, contornos, -1, [255, 0, 0], 1)
+    rgb = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
+    cv2.drawContours(rgb, contornos, -1, [255, 0, 0], 1)
     
     p = (0,0)
     
@@ -35,33 +49,29 @@ def acha_centro_maior_contorno(gray):
 
     if maior is not None:
         p = center_of_contour(maior)      
-        cv2.drawContours(bgr, [maior], -1, [0, 0, 255], 2)
-        crosshair(bgr, p, 5, (0,255,0))
+        cv2.drawContours(rgb, [maior], -1, [0, 0, 255], 2)
+        crosshair(rgb, p, 5, (0,255,0))
     
-    return p
+    return p, maior_area, rgb
 
 
 # Função que percorre a imagem e identifica as extremidades do contorno
 # i = linha
 # j = coluna 
 
-def check_levels(imagem_gray):
-    maior_i = -1
-    menor_i = imagem_gray.shape[0] + 1
-    menor_j = imagem_gray.shape[1] + 1
-    maior_j = -1
-    for i in range(imagem_gray.shape[0]):
-        for j in range(imagem_gray.shape[1]):
-            if imagem_gray[i][j] == 255:
-                if i < menor_i:
-                    menor_i = i
-                if i  > maior_i:
-                    maior_i = i
-                if j  > maior_j:
-                    maior_j = j 
-                if j < menor_j:
-                    menor_j = j
-    return menor_i, maior_i, menor_j, maior_j 
+def acha_limites(mask):
+    lin,col = np.where(mask == 255)
+
+    i_min = min(lin)
+    i_max = max(lin)
+    j_min = min(col)
+    j_max = max(col)
+ 
+    p_min = (j_min, i_min)
+    p_max = (j_max, i_max)
+
+
+    return p_min, p_max
 
 
 def count_pixels(mask, ponto1, ponto2, txt_color):
@@ -78,4 +88,23 @@ def count_pixels(mask, ponto1, ponto2, txt_color):
     rgb_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
     cv2.rectangle(rgb_mask, ponto1, ponto2, (255,0,0), 3)
     cv2.putText(rgb_mask, "%s:%d"%(txt_color, pixels), (int((x1+x2)/2), int((y1+y2)/2)), font, 1, (0,255,0),1,cv2.LINE_AA)
+    
     return pixels, rgb_mask
+
+
+def identifica_maior_linha(mask):
+    minLineLength = 100
+    maxLineGap = 10
+
+    lines = cv2.HoughLinesP(mask,1,np.pi/180,100,minLineLength,maxLineGap)
+
+    maior_comprimento = 0
+    maior_linha = None
+    for x1,y1,x2,y2 in lines[0]:
+        dist = sqrt((x1-x2)**2+(y1-y2)**2)
+
+        if dist > maior_comprimento:
+            maior_comprimento = dist
+            maior_linha = [(x1,y1),(x2,y2)]
+    
+    return maior_linha
